@@ -1,0 +1,68 @@
+sample_rate: 4000000.0
+aperture_time: 0.0005
+dwell_time: 0.3
+gain: 15.0
+randomize: 1
+701500000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+709000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+734000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+739000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+751000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+782000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+821300000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+842500000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+866300000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+887500000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+2412000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+2437000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+2462000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+2695000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5170000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5190000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5210000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5230000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5240000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5775000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0
+5795000000.0:
+  power_correction: 0.001584893192461114
+  noise_average: 0

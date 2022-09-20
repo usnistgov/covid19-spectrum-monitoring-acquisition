@@ -1,0 +1,1154 @@
+<?xml version='1.0' encoding='utf-8'?>
+<?grc format='1' created='3.7.13'?>
+<flow_graph>
+  <timestamp>Mon May 26 09:25:25 2014</timestamp>
+  <block>
+    <key>options</key>
+    <param>
+      <key>author</key>
+      <value>Dan Kuester</value>
+    </param>
+    <param>
+      <key>window_size</key>
+      <value>1600, 900</value>
+    </param>
+    <param>
+      <key>category</key>
+      <value>Custom</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>description</key>
+      <value>Collect averaged power readings vs time</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(0, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>generate_options</key>
+      <value>no_gui</value>
+    </param>
+    <param>
+      <key>hier_block_src_path</key>
+      <value>.:</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>calibrate_noise</value>
+    </param>
+    <param>
+      <key>max_nouts</key>
+      <value>1024000</value>
+    </param>
+    <param>
+      <key>qt_qss_theme</key>
+      <value></value>
+    </param>
+    <param>
+      <key>realtime_scheduling</key>
+      <value></value>
+    </param>
+    <param>
+      <key>run_command</key>
+      <value>{python} -u {filename}</value>
+    </param>
+    <param>
+      <key>run_options</key>
+      <value>run</value>
+    </param>
+    <param>
+      <key>run</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>sizing_mode</key>
+      <value>fixed</value>
+    </param>
+    <param>
+      <key>thread_safe_setters</key>
+      <value></value>
+    </param>
+    <param>
+      <key>title</key>
+      <value>Calibrate Intrinsic SDR Noise</value>
+    </param>
+    <param>
+      <key>placement</key>
+      <value>(0,0)</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(496, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>aperture_time</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>float(config.get('aperture_time', 1e-3))</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value>loaded at runtime from the file autodetected in config_input</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(184, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>config</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>yaml.load(open(config_input,'rb')) if os.path.exists(config_input) else {}</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(248, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>config_input</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>"config-calibrated.yaml" if os.path.exists("config-calibrated.yaml") else "config.yaml"</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(592, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>dwell_time</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>float(config.get('dwell_time', 0.5))</value>
+    </param>
+  </block>
+  <block>
+    <key>variable_function_probe</key>
+    <param>
+      <key>block_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>function_args</key>
+      <value>self.user_hash, self.finish_probe.level()[0] &gt; 0</value>
+    </param>
+    <param>
+      <key>function_name</key>
+      <value>gain; save_corrections.save_corrections</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1200, 380)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>finish</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>poll_rate</key>
+      <value>2</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(352, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>frequencies</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>sorted([k for k in config.keys() if isinstance(k,float)]) or [2412e6]</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(536, 100)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>frequency_poll_rate</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>25</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(432, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>[config.get(fc, {}).get('gain', 15) for fc in frequencies]</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(760, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>input_port</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>['RX1' if fc &lt; 900e6 else 'RX2' for fc in frequencies]</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(184, 100)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>name</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>'../data/'+user_hash + ' cold noise ' + time.strftime('%Y-%m-%d_%Hh%Mm%Ss')</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(840, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>randomize</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>float(config.get('randomize', 0))</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(672, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>sample_rate</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>float(config.get('sample_rate', 10e6))</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value>the 2nd through (N-1)th are used for calibration</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(440, 100)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>sweep_count</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>10</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(336, 100)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>user_hash</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>base64.urlsafe_b64encode(hashlib.md5(os.environ['USERNAME']).digest()[:6]).replace('=','')</value>
+    </param>
+  </block>
+  <block>
+    <key>bladerf_source</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>dwell_time</key>
+      <value>dwell_time</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(168, 232)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>bladerf_source_0</value>
+    </param>
+    <param>
+      <key>input_port</key>
+      <value>input_port</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>frequency</key>
+      <value>frequencies</value>
+    </param>
+    <param>
+      <key>gain</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>randomize</key>
+      <value>randomize</value>
+    </param>
+    <param>
+      <key>sample_rate</key>
+      <value>sample_rate</value>
+    </param>
+  </block>
+  <block>
+    <key>blocks_head</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(792, 284)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>blocks_head_0_0_0_0_0_0_0_0</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>num_items</key>
+      <value>int(dwell_time/aperture_time)*len(frequencies)*sweep_count</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>float</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>1</value>
+    </param>
+  </block>
+  <block>
+    <key>blocks_head</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(920, 252)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>blocks_head_0_0_0_0_0_0_0_0_0</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>num_items</key>
+      <value>int(dwell_time/aperture_time)*len(frequencies)*sweep_count</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>float</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>1</value>
+    </param>
+  </block>
+  <block>
+    <key>blocks_skiphead</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>output on completion</value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(856, 388)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>blocks_skiphead_0</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>num_items</key>
+      <value>int(dwell_time/aperture_time)*len(frequencies)*sweep_count</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>float</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>1</value>
+    </param>
+  </block>
+  <block>
+    <key>epy_module</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>source_code</key>
+      <value># this module will be imported in the into your flowgraph&#13;
+&#13;
+import os, sys, yaml&#13;
+os.chdir(os.path.dirname(__file__))&#13;
+working_dir = os.path.abspath('.')&#13;
+print 'working in '+working_dir&#13;
+&#13;
+try:&#13;
+	os.makedirs('../data')&#13;
+except:&#13;
+	pass&#13;
+&#13;
+# identify and read the config file on first import&#13;
+if os.path.exists("config-calibrated.yaml"):&#13;
+	config_path = 'config-calibrated.yaml'&#13;
+else:&#13;
+	config_path = 'config.yaml'&#13;
+&#13;
+with open(config_path, 'rb') as f:&#13;
+	config = yaml.load(f, Loader=yaml.SafeLoader)&#13;
+&#13;
+center_frequencies = [f for f in config.keys() if isinstance(f, float)]&#13;
+&#13;
+print('read config from %s: '%config_path)&#13;
+for k,v in config.items():&#13;
+	if not isinstance(k, float):&#13;
+		print('\t%s: %f'%(k,v))&#13;
+&#13;
+# unbuffered output for piping&#13;
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>fix working directory</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1448, 20)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>custom</value>
+    </param>
+  </block>
+  <block>
+    <key>energy_detection</key>
+    <param>
+      <key>aperture_time</key>
+      <value>aperture_time</value>
+    </param>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(512, 256)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>energy_detection_0</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>sample_rate</key>
+      <value>sample_rate</value>
+    </param>
+  </block>
+  <block>
+    <key>blocks_probe_signal_vx</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>indicate 'done'</value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1008, 392)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>finish_probe</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>float</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>1</value>
+    </param>
+  </block>
+  <block>
+    <key>import</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1040, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>import_0</value>
+    </param>
+    <param>
+      <key>import</key>
+      <value>import os, sys, yaml, time, hashlib, base64</value>
+    </param>
+  </block>
+  <block>
+    <key>iq_energy_detection_file_sink</key>
+    <param>
+      <key>aperture_time</key>
+      <value>aperture_time</value>
+    </param>
+    <param>
+      <key>name</key>
+      <value>name</value>
+    </param>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>dwell_time</key>
+      <value>dwell_time</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1088, 252)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>iq_energy_detection_file_sink_0</value>
+    </param>
+  </block>
+  <block>
+    <key>epy_module</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>source_code</key>
+      <value># this module will be imported in the into your flowgraph&#13;
+&#13;
+import atexit&#13;
+import time, sys, os, yaml, pmt&#13;
+import pandas as pd&#13;
+import numpy as np&#13;
+from gnuradio import gr&#13;
+from glob import glob&#13;
+import traceback&#13;
+import psutil&#13;
+sys.path.insert(1, '..'); import read&#13;
+&#13;
+def save_corrections(name, ready=False):&#13;
+    ''' save updated corrections into 'config-calibrated.yaml'&#13;
+    '''&#13;
+    if not ready:&#13;
+        return&#13;
+&#13;
+    try:&#13;
+        # if sys.exc_info() != (None, None, None):&#13;
+        #     return&#13;
+&#13;
+        print('starting to save corrections')&#13;
+&#13;
+        time.sleep(.5)&#13;
+&#13;
+        # the path to the most recent cal file&#13;
+        path = sorted(glob('../data/'+name + ' cold noise*.dat'))[-1]&#13;
+&#13;
+        spectrum, metadata = read.swept_average(&#13;
+            path = path,&#13;
+            holdoff = 0.05,&#13;
+            calibrate = False&#13;
+        )&#13;
+&#13;
+        spectrum = spectrum.sort_index(level=['Sweep', 'Frequency', 'Time'])&#13;
+&#13;
+        metadata.pop('peak_sample', 0)&#13;
+&#13;
+        # update metadata with new calibration values&#13;
+        del metadata['center_frequencies']&#13;
+&#13;
+        last_sweep = spectrum.index.levels[0][-1]&#13;
+&#13;
+        # take the last ~1/2 of the sweeps&#13;
+        spectrum = spectrum.loc[1:last_sweep-1]&#13;
+&#13;
+        # compute median on all sweep data taken at a given frequency&#13;
+        averages = spectrum.reset_index().drop('Time', axis=1).pivot(columns='Sweep',index='Frequency').mean(axis=1)&#13;
+        print(averages)&#13;
+        &#13;
+        for f_MHz, noise_average in averages.to_dict().items():&#13;
+            if f_MHz != 0:&#13;
+                metadata[round(f_MHz*10)/10*1e6]['noise_average'] = noise_average&#13;
+        name = 'config-calibrated.yaml'&#13;
+        with open(name, 'wb') as f:&#13;
+            yaml.dump(metadata, f, encoding='utf-8')&#13;
+        print('applied noise floor corrections into "%s"'%name)&#13;
+    except:&#13;
+        print('*** failed with exception ***')&#13;
+        print(traceback.format_exc())&#13;
+    finally:&#13;
+        # find our process ID and kill it to prevent hanging&#13;
+        print('*** completed successfully! ***')&#13;
+        print(sys.exc_info())&#13;
+        pid = os.getpid()&#13;
+        for proc in psutil.process_iter():&#13;
+            if proc.pid == pid:&#13;
+                proc.kill()&#13;
+                break</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>routines to generate calibration corrections</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1200, 484)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>save_corrections</value>
+    </param>
+  </block>
+  <block>
+    <key>epy_block</key>
+    <param>
+      <key>base_path</key>
+      <value>name</value>
+    </param>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_io_cache</key>
+      <value>('Write YAML on start', 'blk', [('base_path', "'path/to/filename_without_extension'"), ('config', 'None')], [], [], 'Embedded Python Block example - a simple multiply const', [])</value>
+    </param>
+    <param>
+      <key>_source_code</key>
+      <value>"""
+Embedded Python Blocks:
+
+Each time this file is saved, GRC will instantiate the first class it finds
+to get ports and parameters of your block. The arguments to __init__  will
+be the parameters. All of them are required to have default values!
+"""
+
+import numpy as np
+from gnuradio import gr
+import sys, io, time
+import osmosdr
+import ctypes
+import os, sys
+import tempfile
+from contextlib import contextmanager
+import ctypes.util
+from ctypes import *
+import platform
+import numpy as np
+import pmt
+import yaml
+import shutil
+import traceback
+
+class blk(gr.sync_block):  # other base classes are basic_block, decim_block, interp_block
+    """Embedded Python Block example - a simple multiply const"""
+
+    def __init__(self, base_path='path/to/filename_without_extension', config=None):  # only default arguments here
+        """arguments to this function show up as parameters in GRC"""
+        gr.sync_block.__init__(
+            self,
+            name='Write YAML on start',   # will show up in GRC
+            in_sig=[],
+            out_sig=[]
+        )
+
+        try:
+            self._config = config
+            self._name = base_path
+
+            if os.path.exists('config.yaml'):
+                self.state = 'first'
+                src = 'config-calibrated.yaml' if os.path.exists('config-calibrated.yaml') else 'config.yaml'
+                shutil.copy(src, self._name+'.yaml')
+        except:
+            print('*** file copy error')
+            print(traceback.format_exc())</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>config</key>
+      <value>config</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1416, 92)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>write_metadata_0</value>
+    </param>
+  </block>
+  <connection>
+    <source_block_id>bladerf_source_0</source_block_id>
+    <sink_block_id>energy_detection_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>blocks_head_0_0_0_0_0_0_0_0</source_block_id>
+    <sink_block_id>iq_energy_detection_file_sink_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>1</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>blocks_head_0_0_0_0_0_0_0_0_0</source_block_id>
+    <sink_block_id>iq_energy_detection_file_sink_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>blocks_skiphead_0</source_block_id>
+    <sink_block_id>finish_probe</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>energy_detection_0</source_block_id>
+    <sink_block_id>blocks_head_0_0_0_0_0_0_0_0_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>energy_detection_0</source_block_id>
+    <sink_block_id>blocks_head_0_0_0_0_0_0_0_0</sink_block_id>
+    <source_key>1</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>energy_detection_0</source_block_id>
+    <sink_block_id>blocks_skiphead_0</sink_block_id>
+    <source_key>1</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+</flow_graph>

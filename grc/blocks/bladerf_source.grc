@@ -1,0 +1,2609 @@
+<?xml version='1.0' encoding='utf-8'?>
+<?grc format='1' created='3.7.13'?>
+<flow_graph>
+  <timestamp>Fri May 22 09:16:21 2020</timestamp>
+  <block>
+    <key>options</key>
+    <param>
+      <key>author</key>
+      <value>Dan Kuester</value>
+    </param>
+    <param>
+      <key>window_size</key>
+      <value></value>
+    </param>
+    <param>
+      <key>category</key>
+      <value>[Sources]</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>description</key>
+      <value>An OsmoCOM source for the BladeRF 2.0, plus workarounds for quirks</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(8, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>generate_options</key>
+      <value>hb</value>
+    </param>
+    <param>
+      <key>hier_block_src_path</key>
+      <value>.:</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>bladerf_source</value>
+    </param>
+    <param>
+      <key>max_nouts</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>qt_qss_theme</key>
+      <value></value>
+    </param>
+    <param>
+      <key>realtime_scheduling</key>
+      <value></value>
+    </param>
+    <param>
+      <key>run_command</key>
+      <value>{python} -u {filename}</value>
+    </param>
+    <param>
+      <key>run_options</key>
+      <value>prompt</value>
+    </param>
+    <param>
+      <key>run</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>sizing_mode</key>
+      <value>fixed</value>
+    </param>
+    <param>
+      <key>thread_safe_setters</key>
+      <value></value>
+    </param>
+    <param>
+      <key>title</key>
+      <value>Stepped BladeRF 2.0 Source</value>
+    </param>
+    <param>
+      <key>placement</key>
+      <value>(0,0)</value>
+    </param>
+  </block>
+  <block>
+    <key>variable_function_probe</key>
+    <param>
+      <key>block_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>reinforce the disabled AGC settings. see:
+https://github.com/Nuand/bladeRF/issues/732</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>function_args</key>
+      <value></value>
+    </param>
+    <param>
+      <key>function_name</key>
+      <value>osmosdr_source_0.set_gain_mode(False, 0); self.osmosdr_source_0.set_gain_mode(False, 1); </value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(8, 292)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>force_agc_disabled</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>poll_rate</key>
+      <value>5</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value>constants</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1008, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>oversample_factor</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>2</value>
+    </param>
+  </block>
+  <block>
+    <key>epy_block</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_io_cache</key>
+      <value>('Source Parameter Stepper', 'blk', [('osmosdr_source_name', "'osmosdr_source_0'"), ('center_frequency', '2695000000.0'), ('sample_rate', '100000.0'), ('gain', '15.0'), ('input_port', "'RX1'"), ('dwell_time', '0.5'), ('buffer_period', '0.1'), ('randomize', 'False'), ('settling_time', '0.02')], [('0', 'complex', 1)], [('0', 'complex', 1)], 'Embedded Python Block example - a simple multiply const', ['buffer_period', 'randomize', 'settling_time'])</value>
+    </param>
+    <param>
+      <key>buffer_period</key>
+      <value>0.05</value>
+    </param>
+    <param>
+      <key>center_frequency</key>
+      <value>frequency</value>
+    </param>
+    <param>
+      <key>_source_code</key>
+      <value>
+import numpy as np
+from gnuradio import gr
+import sys, io, time
+import osmosdr
+import ctypes
+import os, sys
+import tempfile
+from contextlib import contextmanager
+import ctypes.util
+from ctypes import *
+import platform
+import signal
+import numpy as np
+import psutil
+import threading
+import pmt
+from inspect import getouterframes, currentframe
+import traceback
+
+# some acrobatics to access base C library to redirect stderr
+if platform.system() == "Linux":
+    libc = ctypes.CDLL(None)
+    c_stderr = ctypes.c_void_p.in_dll(libc, 'stderr')
+    # c_stdout = ctypes.c_void_p.in_dll(libc, 'stdout')
+if platform.system() == "Windows":
+    class FILE(ctypes.Structure):
+        _fields_ = [
+            ("_ptr", c_char_p),
+            ("_cnt", c_int),
+            ("_base", c_char_p),
+            ("_flag", c_int),
+            ("_file", c_int),
+            ("_charbuf", c_int),
+            ("_bufsize", c_int),
+            ("_tmpfname", c_char_p),
+        ]
+
+    # Gives you the name of the library that you should really use (and then load through ctypes.CDLL
+    msvcrt = CDLL(ctypes.util.find_msvcrt())
+    libc = msvcrt # libc was used in the original example in _redirect_stderr()
+    iob_func = msvcrt.__iob_func
+    iob_func.restype = POINTER(FILE)
+    iob_func.argtypes = []
+
+    array = iob_func()
+
+    s_stdin = addressof(array[0])
+    c_stderr = addressof(array[1])
+    # c_stdout = addressof(array[2])
+
+class _ReadableWrapper(object):
+    def __init__(self, raw):
+        self._raw = raw
+
+    def readable(self):
+        return True
+
+    def writable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def read(self, *args, **kws):
+        return unicode(self._raw.read(*args, **kws))
+
+    def write(self, buf, *args, **kws):
+        return self._raw_.write(unicode(buf), *args, **kws)
+
+    def __getattr__(self, name):
+        return getattr(self._raw, name)
+
+
+class StderrRedirector(object):
+    def __init__(self):
+        original_stderr_fd = sys.stderr.fileno()
+
+        def _redirect_stderr(to_fd):
+
+            """Redirect stderr to the given file descriptor."""
+            # Flush the C-level buffer stderr
+            libc.fflush(c_stderr)
+            # Flush and close sys.stderr - also closes the file descriptor (fd)
+            sys.stderr.close()
+            # Make original_stderr_fd point to the same file as to_fd
+            os.dup2(to_fd, original_stderr_fd)
+
+            # Create a new sys.stderr that points to the redirected fd
+            s = io.BufferedReader(_ReadableWrapper(os.fdopen(original_stderr_fd, 'wb')))
+
+            sys.stderr = io.TextIOWrapper(s)
+
+            def write(s):
+                TextIOWrapper.write(sys.stderr, unicode(s))
+            sys.stderr.write = write
+
+        # Save a copy of the original stderr fd in saved_stderr_fd
+        saved_stderr_fd = os.dup(original_stderr_fd)
+
+        # Create a temporary file and redirect stderr to it
+        self.tfile = tempfile.TemporaryFile(mode='w+b')
+        _redirect_stderr(self.tfile.fileno())
+        self.index = 0
+
+    def get(self):
+        self.tfile.flush()
+        self.tfile.seek(self.index, io.SEEK_SET)
+        buf = self.tfile.read()
+        self.index += len(buf)
+        return buf
+
+# class StdoutRedirector(object):
+#     def __init__(self):
+#         original_stdout_fd = sys.stdout.fileno()
+
+#         def _redirect_stdout(to_fd):
+
+#             """Redirect stdout to the given file descriptor."""
+#             # Flush the C-level buffer stdout
+#             libc.fflush(c_stdout)
+#             # Flush and close sys.stdout - also closes the file descriptor (fd)
+#             sys.stdout.close()
+#             # Make original_stdout_fd point to the same file as to_fd
+#             os.dup2(to_fd, original_stdout_fd)
+
+#             # Create a new sys.stdout that points to the redirected fd
+#             self.original = io.BufferedReader(_ReadableWrapper(os.fdopen(original_stdout_fd, 'wb')))
+
+#             sys.stdout = io.TextIOWrapper(self.original)
+
+#             def write(s):
+#                 TextIOWrapper.write(sys.stdout, unicode(self.original))
+#             sys.stdout.write = write
+
+#         # Save a copy of the original stderr fd in saved_stderr_fd
+#         saved_stdout_fd = os.dup(original_stdout_fd)
+
+#         # Create a temporary file and redirect stderr to it
+#         self.tfile = tempfile.TemporaryFile(mode='w+b')
+#         _redirect_stdout(self.tfile.fileno())
+#         self.index = 0
+
+#     def get(self):
+#         self.tfile.flush()
+#         self.tfile.seek(self.index, io.SEEK_SET)
+#         buf = self.tfile.read()
+#         self.index += len(buf)
+#         return buf
+
+STATE_DWELL = 'dwell'
+STATE_SETTLE = 'settle'
+STATE_TRANSITION = 'transition'
+
+from numbers import Number
+
+class blk(gr.basic_block):  # other base classes are basic_block, decim_block, interp_block
+    """Embedded Python Block example - a simple multiply const"""
+
+    def __init__(self,
+        osmosdr_source_name='osmosdr_source_0',
+        center_frequency=2695e6,
+        sample_rate=100e3,
+        gain=15.,
+        input_port='RX1',
+        dwell_time=0.5,
+        buffer_period=100e-3,
+        randomize=False,
+        settling_time=0.02):
+
+        """arguments to this function show up as parameters in GRC"""
+        gr.basic_block.__init__(
+            self,
+            name='Source Parameter Stepper',   # will show up in GRC
+            in_sig=[np.complex64],
+            out_sig=[np.complex64]
+        )
+
+        # the scalar-only parameters
+        self.settling_time = settling_time
+        self.randomize = randomize
+
+        # make the list of dwell window parameters, making sure that all have length of (a) 1, or
+        # (b) another non-zero length
+        dwells = dict(
+            center_frequency=np.atleast_1d(center_frequency),
+            sample_rate=np.atleast_1d(sample_rate),
+            gain=np.atleast_1d(gain),
+            input_port=np.atleast_1d(input_port),
+            dwell_time=np.atleast_1d(dwell_time),
+        )
+
+        # check the type conversion before proceeding
+        dwells['center_frequency'] = dwells['center_frequency'].astype(np.float64)
+        dwells['sample_rate'] = dwells['sample_rate'].astype(np.float64)
+        dwells['gain'] = dwells['gain'].astype(np.float64)
+        dwells['dwell_time'] = dwells['dwell_time'].astype(np.float64)        
+        if dwells['input_port'].dtype.type != np.string_:
+            raise TypeError('input_port is %s but must be a string (or a sequence of strings)'
+                %dwells['input_port'].dtype)
+
+        # populate the list of parameters 
+        lengths = {len(v) for v in dwells.values()}
+        lengths.discard(1)
+        if len(lengths) == 0:
+            count = 1
+        elif len(lengths) == 1:
+            count = list(lengths)[0]
+        elif len(lengths) &gt; 1:
+            raise ValueError("multiple dwell vector lengths %s - each of (center_frequency, sample_rate, gain, "
+                             "input_port) a scalar or the same length as the others"%(str(lengths)))
+
+        # stash the dwell parameters as a list of parameter dictionaries
+        self.sequence = dwells = [{k: np.resize(v,count)[i] for k,v in dwells.items()} for i in range(count)]
+
+        # set some dependent parameters
+        for dwell in dwells:
+            if (dwell['sample_rate']*buffer_period)%1 == 0:
+                dwell['buffer_samples'] = int(dwell['sample_rate'] * buffer_period)
+            else:
+                raise ValueError('sample rate %f Hz requires a non-integer number of samples '
+                                 'to achieve frequency update period %f s' % (dwell['sample_rate'],buffer_period))
+
+            if (dwell['sample_rate']*dwell['dwell_time'])%1 == 0:
+                dwell['dwell_samples'] = int(dwell['sample_rate'] * dwell['dwell_time'])
+            else:
+                raise ValueError('sample rate %f Hz requires a non-integer number of samples '
+                                 'to achieve dwell time %f s %f' % (dwell['sample_rate'],dwell['dwell_samples'],(dwell['sample_rate']*dwell['dwell_time'])%1))
+
+            # make the settling delay a multiple of buffer_samples
+            dwell['settle_samples'] = dwell['sample_rate']*settling_time
+            dwell['settle_samples'] = int(np.ceil(dwell['settle_samples']/float(dwell['buffer_samples']))*dwell['buffer_samples'])
+
+        # self.first = True
+        self.buffer_period = buffer_period        
+        self.pc_t0 = self.source_t0 = 0
+
+        # configure the block streaming i/o
+        self.set_output_multiple(int(self.sequence[0]['buffer_samples']))
+        self.set_min_output_buffer(int(self.sequence[0]['buffer_samples']))
+        self.set_fixed_rate(True)
+
+        # pull in the source block if the parent is the block. this is not the case
+        # when instantiated from inside GNURadio companion for flowgraph layout
+        owner = getouterframes(currentframe())[1][0].f_locals.get('self', None)
+        self.source = getattr(owner, osmosdr_source_name, None)
+        if self.source is not None:
+            self.active = self.sequence[0]
+
+            self.source.set_center_freq(float(self.active['center_frequency']), 0)
+            self.source.set_center_freq(float(100e6), 1)
+            self.source.set_gain_mode(False, 0)
+            self.source.set_gain(float(self.active['gain']), 0)
+            self.source.set_if_gain(float(self.active['gain']), 0)
+            self.source.set_bb_gain(float(self.active['gain']), 0)
+            self.source.set_antenna(self.active['input_port'], 0)
+
+            # encourage AGC -&gt; off
+            for chan in 1,0:
+                for port in 'RX1', 'RX2':
+                    self.source.set_antenna(port, chan)
+                    self.source.set_gain(float(self.active['gain']), chan)
+                    self.source.set_if_gain(float(self.active['gain']), chan)
+                    self.source.set_bb_gain(float(self.active['gain']), chan)
+                    self.source.set_gain_mode(False, chan)
+
+        # state variables
+        # self.work_count = 0
+        self.dwell_count = -1
+        self.dwell_nitems_end = 0 # triggers change on first call to work()
+        self.state = None
+
+        self.stderr = StderrRedirector()
+        # self.stdout = StdoutRedirector()
+
+    def general_work(self, input_items, output_items):
+        try:
+            # perform work as a state machine with 3 states
+            # self._work_precheck(input_items, output_items)
+
+            if self.dwell_count == -1:
+                # bootstrap on first call
+                # self.state = STATE_TRANSITION
+                # thread = threading.Thread(target=lambda: self._change())
+                # thread.start()
+                self.state = STATE_SETTLE
+                self._change()
+                return 0
+
+            elif self.state is STATE_SETTLE:
+                return self._work_settle(input_items, output_items)
+
+            elif self.state is STATE_DWELL:
+                return self._work_dwell(input_items, output_items)
+
+            elif self.state is STATE_TRANSITION:
+                return self._work_transition(input_items, output_items)
+
+            else:
+                raise IOError("unrecognized state '%s'"%self.state)
+
+        except:
+            self.terminate(sys.exc_info())
+
+    # def forecast(self, noutput_items, ninput_items_required):
+    #     #setup size of input_items[i] for work call
+    #     for i in range(len(ninput_items_required)):
+    #         ninput_items_required[i] = noutput_items
+
+    def _work_precheck(self, input_items, output_items):
+        pass
+        # self.work_count += 1
+
+        # if self.work_count % 100 == 0:
+        #     self.check_stderr(True)
+        # if self.work_count%5 == 0 and self.state is STATE_DWELL:
+        #     dwell = self.sequence[self.dwell_count % len(self.sequence)]
+        #     print 'continuing: ', self.nitems_written(0), self.dwell_nitems_end, self.active['dwell_samples']
+
+    def _work_settle(self, input_items, output_items):
+        if self.nitems_read(0) &gt;= self.settle_nitems_end:
+            self.state = STATE_DWELL
+        else:
+            howmany = min(len(input_items[0]), self.settle_nitems_end - self.nitems_read(0))
+            self.consume_each(howmany)
+
+        return 0
+
+    def _work_dwell(self, input_items, output_items):
+        # slurp everything, or limit to the number of remaining items in this dwell window
+        max_items = min(len(output_items[0]), len(input_items[0]))
+        remaining = self.dwell_nitems_end - self.nitems_written(0)
+        if remaining &lt;= max_items:
+            howmany_items = remaining
+        else:
+            howmany_items = max_items
+
+        if self.nitems_written(0) == self.dwell_nitems_end - self.active['dwell_samples']:
+            self._add_tags()
+
+        # consume and copy the data
+        self.consume_each(howmany_items)
+        output_items[0][:howmany_items] = input_items[0][:howmany_items]
+
+        if self.nitems_written(0) &gt;= self.dwell_nitems_end:
+            self._print_source_state()
+
+            # self.state = STATE_TRANSITION
+            # thread = threading.Thread(target=lambda: self._change())
+            # thread.start()
+            self.state = STATE_SETTLE
+            self._change()
+
+        return howmany_items
+
+    def _work_transition(self, input_items, output_items):
+        self.consume_each(len(input_items[0]))
+        return 0
+
+    def _change(self):
+        ''' apply dwell window acquisition parameters
+        '''
+        # what's below is a watchdog to quit if bladeRF library raises an error in stderr
+        try:
+            t0 = time.time()
+
+            if self.dwell_count == -1:
+                # monitor stderr for libbladeRF messages in a watchdog thread
+                thread = threading.Thread(target=self._watchdog)
+                thread.start()        
+
+
+            # randomize if necessary, and identify the next set of dwell window settings
+            self.dwell_count += 1
+            i = self.dwell_count % len(self.sequence)
+            if self.randomize and i==0:
+                np.random.shuffle(self.sequence)
+            previous, self.active = self.active, self.sequence[i]
+
+            # if there's no change, skip changes and settling time
+            if self.dwell_count &gt; 0 \
+               and self.active['center_frequency'] == previous['center_frequency'] \
+               and self.active['gain'] == previous['gain'] \
+               and self.active['input_port'] == previous['input_port']:
+
+               self.state = STATE_DWELL
+               self.dwell_nitems_end = self.nitems_written(0) + self.active['dwell_samples']
+
+               return 0
+
+
+            # self.source.seek(0, os.SEEK_END, 0)
+            self.source.set_center_freq(float(self.active['center_frequency']), 0)
+            self.source.set_antenna(self.active['input_port'], 0)
+            self.source.set_antenna('RX1' if self.active['input_port'] is 'RX2' else 'RX2', 1)
+            self.source.set_gain(float(self.active['gain']), 0)
+            self.source.set_if_gain(float(self.active['gain']), 0)
+            self.source.set_bb_gain(float(self.active['gain']), 0)
+            self.source.seek(0, os.SEEK_END, 0)
+
+            # on first run, mark the PC system time, which is used by _add_tags
+            source_t = self.source.get_time_now().get_real_secs()
+            if self.pc_t0 == 0:
+                self.pc_t0 = time.time()
+                self.source_t0 = source_t
+
+            self.timestamp = self.pc_t0 + (source_t-self.source_t0)
+
+            # self.check_stderr(True)
+            delay = time.time()-t0
+
+            # prime endpoints for the next states
+            self.settle_nitems_end = self.nitems_read(0) + int((self.settling_time)*self.active['sample_rate'])
+            self.dwell_nitems_end = self.nitems_written(0) + self.active['dwell_samples']
+
+            self.state = STATE_SETTLE
+
+            # print '..took ', time.time()-t0
+
+        except:
+            # print('\n'.join(traceback.format_exception(*sys.exc_info())))
+            print('initialization failure')
+            self.terminate(sys.exc_info())
+
+        return time.time()-t0
+
+    def _print_source_state(self):
+        print(u"%0.1f MHz finished (%s sample rate=%0.1f MHz gain=%i dB, agc enable=%i)"%(
+            self.source.get_center_freq()/1e6,
+            self.source.get_antenna(),
+            self.source.get_sample_rate()/1e6,
+            self.source.get_gain(),
+            self.source.get_gain_mode(0))
+            # dwell['center_frequency']/1e6,
+            # dwell['input_port'],
+            # dwell['sample_rate'],
+            # dwell['gain'],
+            # 0)
+        )
+
+    def _add_tags(self):
+        # tag the time and frequency
+        tag = gr.python_to_tag((self.nitems_written(0),
+                                pmt.intern('frequency'),
+                                pmt.to_pmt(self.active['center_frequency'])))
+        self.add_item_tag(0, tag)
+
+        # recast the 64-bit timestamp into a 64-bit complex type supported by gnuradio
+        cast_timestamp = complex(np.frombuffer(np.array(self.timestamp).tobytes(), dtype='complex64')[0])
+        tag = gr.python_to_tag((self.nitems_written(0), pmt.intern('time'),
+            pmt.to_pmt(cast_timestamp)))
+        # print('emit'+str(self.timestamp-self.pc_t0))
+        self.add_item_tag(0, tag)
+
+    def terminate(self, exception=(None,None,None)):
+        if exception != (None,None,None):
+            print('\n'.join(traceback.format_exception(*exception)))
+        print('*** terminating ***')
+        pid = os.getpid()
+        for proc in psutil.process_iter():
+            if proc.pid == pid:
+                proc.kill()
+                break
+        else:
+            print('*** failed to terminate - could not find process')
+
+    def _watchdog(self):
+        tprev = time.time()
+        last_dwell_count = self.dwell_count
+
+        try:
+            while True:
+                timeout = self.active['dwell_time'] * 5
+
+                stderr = self.check_stderr()
+
+                # check for timeout in libbladeRF stderr
+                if self.dwell_count != last_dwell_count:
+                    tprev = time.time()
+                elif time.time()-tprev &gt; timeout:
+                    raise RuntimeError("source stuck after %0.1fs - need restart"%timeout)
+
+                time.sleep(0.25)
+        except:
+            self.terminate(sys.exc_info())
+
+    def check_stderr(self, raise_exception=True):
+        try:
+            stderr = self.stderr.get()
+
+            if raise_exception:
+                error_loc = unicode(stderr).find(unicode('[ERROR'))
+
+                if error_loc != -1:
+                    # find our process ID and kill it to prevent hanging
+                    raise RuntimeError('libbladerf error: "%s"'%stderr[error_loc:].splitlines()[0])
+        except BaseException as e:
+            stderr = ''
+            print('*** check_stderr exception: %s'%(str(e)))
+            raise
+        finally:
+            # likely-harmless warnings or info
+            if len(stderr)&gt;0:
+                print(stderr)
+
+        return stderr</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>This runs on a separate (much slower clock) dictated
+by the input message rate.</value>
+    </param>
+    <param>
+      <key>dwell_time</key>
+      <value>dwell_time</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(520, 240)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>controller</value>
+    </param>
+    <param>
+      <key>input_port</key>
+      <value>input_port</value>
+    </param>
+    <param>
+      <key>osmosdr_source_name</key>
+      <value>'osmosdr_source_0'</value>
+    </param>
+    <param>
+      <key>randomize</key>
+      <value>randomize</value>
+    </param>
+    <param>
+      <key>sample_rate</key>
+      <value>sample_rate*oversample_factor</value>
+    </param>
+    <param>
+      <key>settling_time</key>
+      <value>.1</value>
+    </param>
+  </block>
+  <block>
+    <key>epy_module</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>source_code</key>
+      <value># this module will be imported in the into your flowgraph&#13;
+&#13;
+import os, sys&#13;
+os.chdir(os.path.dirname(__file__))&#13;
+working_dir = os.path.abspath('.')&#13;
+print 'working in '+working_dir&#13;
+&#13;
+from flowgraph_tools import *</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>get working_dir</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(8, 172)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>custom</value>
+    </param>
+  </block>
+  <block>
+    <key>parameter</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(704, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>dwell_time</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>Dwell time (s)</value>
+    </param>
+    <param>
+      <key>short_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>hide</key>
+      <value>none</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value></value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>0.5</value>
+    </param>
+  </block>
+  <block>
+    <key>parameter</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(192, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>frequency</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>RF Center Frequency (Hz)</value>
+    </param>
+    <param>
+      <key>short_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>hide</key>
+      <value>none</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value></value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>2.695e9</value>
+    </param>
+  </block>
+  <block>
+    <key>parameter</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(320, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>RX Gain (dB)</value>
+    </param>
+    <param>
+      <key>short_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>hide</key>
+      <value>none</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value></value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>15</value>
+    </param>
+  </block>
+  <block>
+    <key>parameter</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(552, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>input_port</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>Input port ("RX1"/"RX2")</value>
+    </param>
+    <param>
+      <key>short_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>hide</key>
+      <value>none</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value></value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>"RX1"</value>
+    </param>
+  </block>
+  <block>
+    <key>low_pass_filter</key>
+    <param>
+      <key>beta</key>
+      <value>6.76</value>
+    </param>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>cutoff_freq</key>
+      <value>sample_rate*.47</value>
+    </param>
+    <param>
+      <key>decim</key>
+      <value>oversample_factor</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>fir_filter_ccf</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(784, 252)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>low_pass_filter_0</value>
+    </param>
+    <param>
+      <key>interp</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>samp_rate</key>
+      <value>oversample_factor*sample_rate</value>
+    </param>
+    <param>
+      <key>width</key>
+      <value>sample_rate*.1</value>
+    </param>
+    <param>
+      <key>win</key>
+      <value>firdes.WIN_HAMMING</value>
+    </param>
+  </block>
+  <block>
+    <key>osmosdr_source</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>ant0</key>
+      <value>'RX2'</value>
+    </param>
+    <param>
+      <key>bb_gain0</key>
+      <value>15</value>
+    </param>
+    <param>
+      <key>bw0</key>
+      <value>sample_rate*oversample_factor</value>
+    </param>
+    <param>
+      <key>dc_offset_mode0</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr0</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq0</key>
+      <value>500e6</value>
+    </param>
+    <param>
+      <key>gain_mode0</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>if_gain0</key>
+      <value>15</value>
+    </param>
+    <param>
+      <key>iq_balance_mode0</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain0</key>
+      <value>15</value>
+    </param>
+    <param>
+      <key>ant10</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain10</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw10</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode10</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr10</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq10</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode10</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain10</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode10</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain10</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant11</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain11</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw11</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode11</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr11</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq11</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode11</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain11</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode11</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain11</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant12</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain12</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw12</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode12</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr12</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq12</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode12</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain12</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode12</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain12</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant13</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain13</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw13</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode13</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr13</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq13</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode13</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain13</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode13</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain13</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant14</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain14</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw14</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode14</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr14</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq14</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode14</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain14</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode14</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain14</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant15</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain15</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw15</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode15</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr15</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq15</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode15</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain15</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode15</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain15</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant16</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain16</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw16</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode16</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr16</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq16</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode16</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain16</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode16</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain16</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant17</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain17</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw17</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode17</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr17</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq17</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode17</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain17</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode17</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain17</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant18</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain18</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw18</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode18</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr18</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq18</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode18</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain18</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode18</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain18</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant19</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain19</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw19</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode19</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr19</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq19</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode19</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain19</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode19</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain19</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant1</key>
+      <value>RX1</value>
+    </param>
+    <param>
+      <key>bb_gain1</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>bw1</key>
+      <value>float(sample_rate*oversample_factor)</value>
+    </param>
+    <param>
+      <key>dc_offset_mode1</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr1</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq1</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode1</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain1</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>iq_balance_mode1</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain1</key>
+      <value>gain</value>
+    </param>
+    <param>
+      <key>ant20</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain20</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw20</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode20</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr20</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq20</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode20</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain20</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode20</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain20</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant21</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain21</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw21</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode21</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr21</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq21</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode21</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain21</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode21</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain21</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant22</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain22</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw22</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode22</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr22</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq22</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode22</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain22</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode22</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain22</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant23</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain23</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw23</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode23</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr23</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq23</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode23</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain23</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode23</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain23</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant24</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain24</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw24</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode24</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr24</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq24</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode24</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain24</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode24</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain24</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant25</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain25</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw25</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode25</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr25</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq25</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode25</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain25</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode25</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain25</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant26</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain26</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw26</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode26</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr26</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq26</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode26</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain26</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode26</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain26</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant27</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain27</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw27</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode27</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr27</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq27</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode27</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain27</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode27</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain27</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant28</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain28</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw28</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode28</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr28</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq28</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode28</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain28</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode28</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain28</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant29</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain29</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw29</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode29</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr29</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq29</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode29</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain29</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode29</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain29</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant2</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain2</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw2</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode2</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr2</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq2</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode2</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain2</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode2</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain2</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant30</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain30</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw30</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode30</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr30</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq30</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode30</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain30</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode30</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain30</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant31</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain31</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw31</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode31</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr31</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq31</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode31</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain31</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode31</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain31</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant3</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain3</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw3</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode3</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr3</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq3</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode3</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain3</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode3</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain3</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant4</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain4</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw4</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode4</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr4</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq4</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode4</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain4</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode4</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain4</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant5</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain5</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw5</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode5</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr5</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq5</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode5</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain5</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode5</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain5</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant6</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain6</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw6</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode6</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr6</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq6</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode6</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain6</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode6</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain6</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant7</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain7</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw7</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode7</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr7</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq7</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode7</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain7</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode7</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain7</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant8</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain8</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw8</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode8</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr8</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq8</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode8</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain8</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode8</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain8</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>ant9</key>
+      <value></value>
+    </param>
+    <param>
+      <key>bb_gain9</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>bw9</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>dc_offset_mode9</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>corr9</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>freq9</key>
+      <value>100e6</value>
+    </param>
+    <param>
+      <key>gain_mode9</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>if_gain9</key>
+      <value>20</value>
+    </param>
+    <param>
+      <key>iq_balance_mode9</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>gain9</key>
+      <value>10</value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value>Parameter guide (also ref https://bit.ly/3aJpr10)
+CH0 Gain Mode: This should be "Automatic"*
+CH0 antenna: "RX1" or "RX2"
+CH0 BB gain: -12 dB to 60 dB (really FE+BB)
+
+CH(1...) Frequency: Ensure these are constant!
+* Even though we want (and achieve) AGC off</value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>args</key>
+      <value>bladerf=0,buffers=32,buflen=65536,transfers=8,agc_mode='manual',agc=0</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(224, 224)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>osmosdr_source_0</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>clock_source0</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source0</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source1</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source1</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source2</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source2</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source3</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source3</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source4</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source4</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source5</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source5</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source6</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source6</key>
+      <value></value>
+    </param>
+    <param>
+      <key>clock_source7</key>
+      <value></value>
+    </param>
+    <param>
+      <key>time_source7</key>
+      <value></value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>nchan</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>num_mboards</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>fc32</value>
+    </param>
+    <param>
+      <key>sample_rate</key>
+      <value>sample_rate*oversample_factor</value>
+    </param>
+    <param>
+      <key>sync</key>
+      <value></value>
+    </param>
+  </block>
+  <block>
+    <key>pad_sink</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(1000, 300)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>pad_sink_0</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>complex</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>Out</value>
+    </param>
+    <param>
+      <key>num_streams</key>
+      <value>1</value>
+    </param>
+    <param>
+      <key>optional</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>1</value>
+    </param>
+  </block>
+  <block>
+    <key>parameter</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(808, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>randomize</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>Randomize</value>
+    </param>
+    <param>
+      <key>short_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>hide</key>
+      <value>none</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>intx</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>False</value>
+    </param>
+  </block>
+  <block>
+    <key>parameter</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(424, 4)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>sample_rate</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value>Sample rate (sps)</value>
+    </param>
+    <param>
+      <key>short_id</key>
+      <value></value>
+    </param>
+    <param>
+      <key>hide</key>
+      <value>none</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value></value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>4e6</value>
+    </param>
+  </block>
+  <connection>
+    <source_block_id>controller</source_block_id>
+    <sink_block_id>low_pass_filter_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>low_pass_filter_0</source_block_id>
+    <sink_block_id>pad_sink_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>osmosdr_source_0</source_block_id>
+    <sink_block_id>controller</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+</flow_graph>

@@ -1,0 +1,1 @@
+C:\python27\python.exe finish-environment-setup.py
